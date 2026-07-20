@@ -250,19 +250,82 @@ def build_M_matrix(kz, P_vac_struct, Q_struct, P_struct_sub):
 Kz = K * np.sin(alpha_)
 Kp = K * np.cos(alpha_)
 # diffraction orders
-m_max = 2
+m_max = n_max
 m_values = np.arange(-m_max, m_max + 1)  # [-2, -1, 0, 1, 2]
 # eigenvalues and eigenvectors for alpha_ and phi_
 A_, k_hp = build_A_matrix(f_h, h_vector, alpha_, phi_)
 eigenvalues_, E_ = linalg.eig(A_)
 
-# sorting by arguments instead of setting signs
-idx_sorted = np.argsort(-np.imag(np.sqrt(eigenvalues_)))
-eigenvalues_ = eigenvalues_[idx_sorted]
-E_ = E_[:, idx_sorted]
+
+# ===============DISCRETE EIGENVECTOR VISUALIZATION (CHESSBOARD STYLE)===============
+def plot_eigenvectors_discrete(E_, m_values, alpha_, phi_, title="Собственные векторы (дискретная карта)"):
+    """
+    Визуализация собственных векторов в виде дискретной шахматной доски
+    Каждая клетка - это амплитуда для конкретного дифракционного порядка и моды
+    """
+    D = E_.shape[1]  # количество мод
+
+    # Выбираем сколько мод показывать (все или ограничиваем)
+    n_modes_to_show = min(D, 15)
+
+    # Берем модуль амплитуд
+    E_mag = np.abs(E_[:, :n_modes_to_show]).T  # транспонируем: строки - моды, столбцы - порядки
+
+    # Нормируем каждую строку (моду) для лучшей визуализации
+    # Или можно нормировать всю матрицу
+    E_mag_norm = E_mag / (np.max(E_mag) + 1e-12)
+
+    # Создаем фигуру
+    fig, axes = plt.subplots(1, 1, figsize=(6.5, 6))
+
+    # ===== 1. Тепловая карта с четкими границами (без интерполяции) =====
+    ax1 = axes
+
+    # Используем imshow с interpolation='none' для четких пикселей
+    im1 = ax1.imshow(E_mag_norm,
+                     aspect='auto',
+                     cmap='viridis',
+                     interpolation='none',  # КЛЮЧЕВОЙ ПАРАМЕТР - отключает интерполяцию
+                     extent=[m_values[0] - 0.5, m_values[-1] + 0.5,
+                             n_modes_to_show - 0.5, -0.5],
+                     vmin=0, vmax=1)
+
+    # Добавляем сетку для четкого разделения клеток
+    ax1.set_xticks(range(m_values[0], m_values[-1] + 1))
+    ax1.set_yticks(range(n_modes_to_show))
+    ax1.set_xticklabels(m_values)
+    ax1.set_yticklabels([f'Mode {n}' for n in range(n_modes_to_show)])
+
+    # Рисуем линии сетки поверх карты
+    # ax1.grid(which='both', color='white', linestyle='-', linewidth=0.5, alpha=0.3)
+
+    ax1.set_xlabel('Diffraction order m', fontsize=12)
+    ax1.set_ylabel('Mode number n', fontsize=12)
+    ax1.set_title(f'|Eigenvector components|\nα={alpha_}°, φ={phi_}°', fontsize=12)
+
+    # Цветовая шкала
+    cbar1 = plt.colorbar(im1, ax=ax1, fraction=0.046, pad=0.04)
+    cbar1.set_label('Normalized amplitude')
+
+    plt.suptitle(title, fontsize=14, weight='bold')
+    plt.tight_layout()
+    plt.show()
+
+    return fig
+
+
+# Вызов функции
+plot_eigenvectors_discrete(E_, m_values, alpha_, phi_)
 
 # calculating sqrt of eigenvalues
 kz = np.sqrt(eigenvalues_)
+# we set signs of real and imag parts as they have to be
+kz_real = np.abs(kz.real)
+kz_imag = -np.abs(kz.imag)
+kzs = kz + 1j * kz
+
+kz = kzs
+
 D = len(kz)
 # every layer calculation
 # 0 vacuum
@@ -274,7 +337,7 @@ P_struct = build_P_matrix(E_, kz, False)
 Q_struct = build_Q_matrix(kz, height)
 
 # 2 substrate
-kz_sub = np.sqrt(K**2 * chi - k_hp**2 + 0j)
+kz_sub = np.sqrt(K**2 *(1 + chi) - k_hp**2 + 0j)
 P_sub = build_P_matrix(np.eye(D), kz_sub, True)
 
 # interface matrices
@@ -303,9 +366,6 @@ R_vac = M21 @ T_sub
 # ===============AMPLITUDES===============
 # amplitudes inside layer
 def get_amplitudes_inside_layer(P_vac_struct, Q_struct, P_struct_sub, M11, T_vac, kz, D):
-    """
-    Возвращает функцию для получения амплитуд на любой глубине внутри слоя
-    """
     # Находим T_sub
     T_sub = linalg.solve(M11, T_vac)
 
@@ -325,13 +385,24 @@ def get_amplitudes_inside_layer(P_vac_struct, Q_struct, P_struct_sub, M11, T_vac
     return get_at_z, T_bottom, R_bottom, T_sub
 
 # ===============FIELD COMPUTATION===============
-def compute_field(X, Z, height, K, Kp, Kz, kz_vac_full, R_vac, E_, kz, T_sub, kz_sub, D, m_values, length, Kx_h):
+def compute_field_correct(X, Z, height, K, alpha_, R_vac, E_, kz, T_bottom, R_bottom, T_sub, kz_sub, D, m_values, length):
     """
-    Вычисляет поле E(x,z) для сетки координат
+    Правильное вычисление поля с учетом фаз из статьи
     """
     E_field = np.zeros_like(X, dtype=complex)
+    deg = np.pi / 180
 
-    # Для каждого порядка получаем амплитуды
+    # Горизонтальные компоненты для каждого дифракционного порядка
+    Kx_h = K * np.cos(alpha_ * deg) + 2 * np.pi / length * m_values
+    Kz = K * np.sin(alpha_ * deg)
+    kz_vac = np.sqrt(K ** 2 - Kx_h ** 2 + 0j)
+
+    # Индекс нулевого порядка
+    zero_idx = np.argmin(np.abs(m_values))
+
+    print(f"Computing field on grid {X.shape[0]} x {X.shape[1]}")
+    print(f"D = {D}, modes = {len(m_values)}")
+
     for i in range(X.shape[0]):
         for j in range(X.shape[1]):
             x = X[i, j]
@@ -339,32 +410,30 @@ def compute_field(X, Z, height, K, Kp, Kz, kz_vac_full, R_vac, E_, kz, T_sub, kz
 
             if z > height:
                 # ===== ВАКУУМ (z > H) =====
-                # Падающая волна (только нулевой порядок)
-                E_inc = np.exp(1j * (Kx_h[np.argmin(np.abs(m_values))] * x + Kz * (z - height)))
+                # Падающая волна
+                E_inc = np.exp(1j * (Kx_h[zero_idx] * x + Kz * (z - height)))
 
-                # Отраженные волны (идут вверх)
+                # Отраженные волны
                 E_ref = 0
                 for idx in range(D):
                     if idx < len(R_vac):
-                        E_ref += R_vac[idx] * np.exp(1j * (Kx_h[idx] * x - kz_vac_full[idx] * (z - height)))
+                        E_ref += R_vac[idx] * np.exp(1j * (Kx_h[idx] * x - kz_vac[idx] * (z - height)))
 
                 E_field[i, j] = E_inc + E_ref
 
             elif z >= 0:
                 # ===== СТРУКТУРИРОВАННЫЙ СЛОЙ (0 <= z <= H) =====
-                # Получаем амплитуды на этой глубине
-                T_z, R_z = get_T_R(z)
-
-                # Суммируем по всем модам
                 E_layer = 0
-                for n in range(D):
+
+                for n in range(D):  # по модам
                     # Амплитуда моды n на глубине z
-                    amplitude = T_z[n] * np.exp(1j * kz[n] * z) + R_z[n] * np.exp(-1j * kz[n] * z)
+                    # Используем T_bottom и R_bottom (на z=0)
+                    amp_n = T_bottom[n] * np.exp(1j * kz[n] * z) + R_bottom[n] * np.exp(-1j * kz[n] * z)
 
                     # Суммируем по дифракционным порядкам
-                    for idx in range(D):
-                        if idx < E_.shape[0] and n < E_.shape[1]:
-                            E_layer += amplitude * E_[idx, n] * np.exp(1j * Kx_h[idx] * x)
+                    for m_idx in range(D):
+                        if m_idx < E_.shape[0] and n < E_.shape[1]:
+                            E_layer += amp_n * E_[m_idx, n] * np.exp(1j * Kx_h[m_idx] * x)
 
                 E_field[i, j] = E_layer
 
@@ -380,9 +449,7 @@ def compute_field(X, Z, height, K, Kp, Kz, kz_vac_full, R_vac, E_, kz, T_sub, kz
     return E_field
 
 # ===============GET AMPLITUDES FUNCTION===============
-get_T_R, T_bottom, R_bottom, T_sub = get_amplitudes_inside_layer(
-    P_vac_struct, Q_struct, P_struct_sub, M11, T_vac, kz, D
-)
+get_T_R, T_bottom, R_bottom, T_sub = get_amplitudes_inside_layer(P_vac_struct, Q_struct, P_struct_sub, M11, T_vac, kz, D)
 
 # ===============CREATE GRID (ОДИН ПЕРИОД)===============
 # Показываем только один период: от -length/2 до length/2
@@ -408,10 +475,10 @@ Kx_h = K * np.cos(alpha_rad) + h_values
 kz_vac_full = np.sqrt(K ** 2 - Kx_h ** 2 + 0j)
 
 # Вычисляем поле
-E_field = compute_field(
-    X, Z, height, K, Kp, Kz,
-    kz_vac_full, R_vac, E_, kz,
-    T_sub, kz_sub, D, m_values, length, Kx_h
+E_field = compute_field_correct(
+    X, Z, height, K, alpha_, R_vac, E_, kz,
+    T_bottom, R_bottom, T_sub, kz_sub,
+    D, m_values, length
 )
 
 print("Построение тепловой карты...")
@@ -419,9 +486,6 @@ print("Построение тепловой карты...")
 
 # ===============PLOT HEATMAP (ОДИН ПЕРИОД)===============
 def plot_heatmap(X, Z, E_field, height, length, gamma, alpha_):
-    """
-    Строит тепловую карту для одного периода
-    """
     # Интенсивность
     I_field = np.abs(E_field) ** 2
 
@@ -472,11 +536,11 @@ def plot_heatmap(X, Z, E_field, height, length, gamma, alpha_):
     ax.legend(handles=legend_elements, loc='upper right')
 
     # Сетка
-    ax.grid(True, alpha=0.2, linestyle=':')
+    # ax.grid(True, alpha=0.2, linestyle=':')
 
     # Отметки границ
-    ax.axhline(y=0, color='gray', linestyle=':', alpha=0.3, linewidth=1)
-    ax.axhline(y=height, color='gray', linestyle=':', alpha=0.3, linewidth=1)
+    # ax.axhline(y=0, color='gray', linestyle=':', alpha=0.3, linewidth=1)
+    # ax.axhline(y=height, color='gray', linestyle=':', alpha=0.3, linewidth=1)
 
     # Ограничиваем оси
     ax.set_xlim(-length / 2, length / 2)
