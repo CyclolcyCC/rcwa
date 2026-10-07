@@ -129,10 +129,10 @@ def interface_matrix(P_upper, P_lower):
 def solve_grating(alpha, phi, **p):
     """
     [R_vac, T_lay, R_lay, T_sub], dim = D.
-        z = 0:  δ + R_vac            = E (T + q R)
-                κ_vac (δ − R_vac)    = E k_z (T − q R)
-        z = t:  E (q T + R)          = T_sub
-                E k_z (q T − R)      = κ_sub T_sub
+        z = 0:  delta + R_vac            = E (T + q R)
+                κ_vac (delta − R_vac)    = E k_z (T − q R)
+        z = t:  E (q T + R)              = T_sub
+                E k_z (q T − R)          = κ_sub T_sub
     """
     L = layer_wavevectors(alpha, phi, **p)
     m_ = p['m']
@@ -174,7 +174,7 @@ def solve_grating_transfer_matrix(alpha, phi, **p):
     Формулировка статьи: матрица переноса (38), (47), (48).
         M = P_{01} Q^{(1)} P_{12}  (Q^{(2)} = I - фазы в подложке отсчитываются от её верхней границы),
         T_sub = M11^{−1} T_vac,  R_vac = M21 T_sub.
-    Численно неустойчива при больших Im(k_zn) t (см. cond(M11)); оставлена для сравнения.
+    Численно неустойчива при больших Im(k_zn) t (см. cond(M11));.
     """
     L = layer_wavevectors(alpha, phi, **p)
     m_, t_ = p['m'], p['t']
@@ -203,8 +203,6 @@ def solve_grating_transfer_matrix(alpha, phi, **p):
 # =============== NEAR FIELD ===============
 def compute_field(sol, x, z):
     """
-    Поле E(x, z) в одном периоде (без общего множителя exp(i K_y y)).
-    z — глубина, положительная вниз: z < 0 вакуум, 0 <= z <= t решётка, z > t подложка.
         вакуум:   e^{i K_x x} e^{i K_z z} + Σ_h R_h e^{i k_hx x} e^{−i K_hz z}
         решётка:  Σ_h e^{i k_hx x} Σ_n [T_n e^{i k_zn z} + R_n e^{−i k_zn (z − t)}] E_hn
         подложка: Σ_h T^s_h e^{i k_hx x} e^{i k^s_hz (z − t)}
