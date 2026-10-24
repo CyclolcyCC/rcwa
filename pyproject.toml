@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "xsw"
+version = "0.1.0"
+description = "Vector X-ray standing waves and semi-analytic fluorescence in line gratings"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["numpy>=1.24", "scipy>=1.10", "threadpoolctl>=3.1"]
+
+[project.optional-dependencies]
+plot = ["matplotlib>=3.6"]
+test = ["pytest>=7"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["xsw*"]
+
+[tool.setuptools.package-data]
+xsw = ["data/sf/*.nff", "data/sf/readme.txt", "data/*.md"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+

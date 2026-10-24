@@ -1,0 +1,264 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=22mm]{geometry}
+\usepackage{amsmath,amssymb,bm}
+\usepackage{xcolor}
+\usepackage[colorlinks=true,urlcolor=blue,linkcolor=blue]{hyperref}
+\hypersetup{pdftitle={Vector XSW: equations and modal integration},pdfauthor={XSW project}}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt}
+\setlength{\abovedisplayskip}{9pt}
+\setlength{\belowdisplayskip}{9pt}
+\newcommand{\E}{\mathbf E}
+\newcommand{\HH}{\mathbf h}
+\newcommand{\ii}{\mathrm i}
+\newcommand{\dd}{\mathrm d}
+\newcommand{\diag}{\operatorname{diag}}
+\newcommand{\topic}[2]{\noindent{\large\bfseries #1}\hfill{\small #2}\par\medskip}
+\begin{document}
+\begin{center}
+{\LARGE\bfseries Vector XSW}\par\vspace{4pt}
+{\large Equations and modal integration}\par\vspace{3pt}
+{\small A compact record of our theory discussion}
+\end{center}
+\topic{1. Equation and ansatz}{Geometry and conventions}
+
+Isotropic, nonmagnetic material: $\varepsilon(x,z)=1+\chi(x,z)$.
+Period $D$ along $x$; invariant along $y$; piecewise constant along $z$.
+Depth $z$ increases into the sample. Lengths are in nm.
+\begin{equation}
+ e^{-\ii\omega t},\qquad k_0=\frac{2\pi}{\lambda},\qquad \HH=Z_0\mathbf H.
+\end{equation}
+
+\textbf{Vector wave equation}
+\begin{equation}
+ \boxed{\nabla\times\nabla\times\E=k_0^2\varepsilon\E},
+ \qquad \nabla\cdot(\varepsilon\E)=0.
+\end{equation}
+The code starts from the equivalent coupled Maxwell equations:
+\begin{equation}
+ \nabla\times\E=\ii k_0\HH,\qquad
+ \nabla\times\HH=-\ii k_0\varepsilon\E.
+\end{equation}
+
+\textbf{Relation to the scalar approximation}
+\begin{equation}
+ \nabla\times\nabla\times\E=\nabla(\nabla\cdot\E)-\nabla^2\E.
+\end{equation}
+Only within a uniform material does $\nabla\cdot\E=0$ follow directly.
+The code does not drop the divergence term globally or assume weak contrast.
+EUV wavelength alone does not establish the accuracy of a scalar approximation.
+
+\textbf{Bloch ansatz: Nikolaev-like notation}
+\begin{equation}
+ \boxed{\E(\mathbf r)=\sum_h\E_h(z)
+ e^{\ii\mathbf k_{h\parallel}\cdot\mathbf r_\parallel}},
+ \qquad \mathbf k_{h\parallel}=\left(k_x+\frac{2\pi h}{D},\,k_y\right).
+\end{equation}
+\begin{equation}
+ \E_h=\begin{pmatrix}E_{x,h}\\E_{y,h}\\E_{z,h}\end{pmatrix},
+ \qquad \chi(x,z)=\sum_h\chi_h(z)e^{\ii 2\pi hx/D}.
+\end{equation}
+Numerically, $h=-M,\ldots,M$: $N=2M+1$ spatial orders.
+In each layer, the depth dependence is a sum of forward and backward modes:
+\begin{equation}
+ \E(x,y,z)=e^{\ii k_y y}\sum_n
+ \left[T_n\mathbf u_n^+(x)e^{\ii k_{z,n}z}
+       +R_n\mathbf u_n^-(x)e^{-\ii k_{z,n}z}\right].
+\end{equation}
+Here $z$ is measured from a common reference plane in the layer.
+The physical mode profiles $\mathbf u_n^\pm$ contain all three electric components.
+
+\newpage
+\topic{2. Vector eigenproblem}{One layer at a time}
+
+Let $[f]_{hg}=f_{h-g}$ denote a Fourier convolution matrix. Define
+\begin{equation}
+ C=[\varepsilon],\quad C_{hg}=\delta_{hg}+\chi_{h-g},\qquad
+ B=[1/\varepsilon],\quad A=B^{-1},
+\end{equation}
+\begin{equation}
+ X=\diag(k_{x,h}/k_0),\qquad Y=(k_y/k_0)I.
+\end{equation}
+$A$ implements the inverse Fourier factorization of the normal displacement.
+It is not Nikolaev's scalar eigenproblem matrix.
+
+Eliminating longitudinal components gives
+\begin{equation}
+ \frac{\dd\mathbf e_t}{\dd z}=\ii k_0P\HH_t,\qquad
+ \frac{\dd\HH_t}{\dd z}=\ii k_0Q\mathbf e_t,
+ \qquad
+ \mathbf e_t=\begin{pmatrix}\{E_{x,h}\}\\\{E_{y,h}\}\end{pmatrix}.
+\end{equation}
+\begin{equation}
+ P=\begin{pmatrix}
+ XC^{-1}Y&I-XC^{-1}X\\
+ YC^{-1}Y-I&-YC^{-1}X
+ \end{pmatrix},
+\end{equation}
+\begin{equation}
+ Q=\begin{pmatrix}
+ -XY&X^2-C\\
+ A-Y^2&YX
+ \end{pmatrix}.
+\end{equation}
+
+For $\mathbf e_t=\mathbf w_n e^{\ii k_{z,n}z}$:
+\begin{equation}
+ \boxed{\left(k_0^2PQ-k_{z,n}^2I\right)\mathbf w_n=0},
+ \qquad q_n=k_{z,n}/k_0.
+\end{equation}
+This is the vector counterpart of Nikolaev's scalar eigenproblem.
+There are $2N$ forward modes, with corresponding backward modes.
+\begin{equation}
+ W=(\mathbf w_1,\ldots,\mathbf w_{2N}),\qquad
+ V=QW\diag(q_n^{-1}).
+\end{equation}
+$W$ and $V$ contain tangential electric and magnetic eigenvectors, respectively.
+Forward branches have $\operatorname{Im}q_n\geq0$; propagating lossless branches
+have $\operatorname{Re}q_n>0$.
+
+\textbf{Longitudinal fields and physical reconstruction}
+\begin{equation}
+ E_z=C^{-1}(Yh_x-Xh_y),\qquad h_z=XE_y-YE_x.
+\end{equation}
+For backward modes, $E_z,h_x,h_y$ change sign; $E_x,E_y,h_z$ do not.
+The code reconstructs $D_x/\varepsilon_0$ from coefficients $AE_x$, then divides
+by the local $\varepsilon(x)$ to obtain physical $E_x(x)$.
+
+\textbf{Both s and p use this same eigenproblem.} Only the incident excitation
+changes. Conical-incidence polarization coupling is retained.
+
+\smallskip
+\emph{Notation:} $P,Q$ here are Maxwell operators. They are not Nikolaev's
+interface basis and propagation matrix, denoted $\mathcal P,\mathcal Q$ below.
+
+\newpage
+\topic{3. Boundary conditions and roughness}{Matching modal amplitudes}
+
+\textbf{Sharp interface, no surface currents}
+\begin{equation}
+ \boxed{E_x^{(j)}=E_x^{(j+1)},\quad E_y^{(j)}=E_y^{(j+1)},\quad
+ H_x^{(j)}=H_x^{(j+1)},\quad H_y^{(j)}=H_y^{(j+1)}}.
+\end{equation}
+At the same interface plane:
+\begin{equation}
+ \boxed{\mathcal P_j\begin{pmatrix}\mathbf T_j\\\mathbf R_j\end{pmatrix}
+ =\mathcal P_{j+1}\begin{pmatrix}\mathbf T_{j+1}\\\mathbf R_{j+1}\end{pmatrix}},
+ \qquad \mathcal P_j=\begin{pmatrix}W_j&W_j\\V_j&-V_j\end{pmatrix}.
+\end{equation}
+\begin{equation}
+ \mathcal V_{j,j+1}=\mathcal P_j^{-1}\mathcal P_{j+1}.
+\end{equation}
+Prescribe the incident vector in the ambient and zero incoming amplitude from
+the substrate. These close the system for all reflected and transmitted modes.
+
+Propagation through a depth increment $d$ in our positive-depth convention is
+\begin{equation}
+ \mathcal Q(d)=\diag\!\left(e^{\ii k_0q_n d},e^{-\ii k_0q_n d}\right).
+\end{equation}
+In computation, forward amplitudes are anchored at layer tops and backward
+amplitudes at bottoms; traversal uses only $e^{\ii k_0q_nd}$.
+
+\textbf{Interface roughness: effective modal extension}
+\begin{equation}
+ \kappa_{j,a}=\begin{cases}+k_0q_{j,n}&\text{forward},\\-k_0q_{j,n}&\text{backward},\end{cases}
+ \qquad
+ F_{ab}=\exp\!\left[-\frac{\sigma^2}{2}
+ (\kappa_{j,a}-\kappa_{j+1,b})^2\right].
+\end{equation}
+\begin{equation}
+ \boxed{\mathcal V_\sigma=\mathcal V\odot F}.
+\end{equation}
+$\odot$ is elementwise multiplication. $F$ is generally dense ($4N\times4N$),
+not diagonal and not a matrix exponential. At $\sigma=0$, every entry is one.
+Use complex signed wavevectors, without conjugation.
+
+For a homogeneous interface this recovers
+\begin{equation}
+ r_\sigma=r_0e^{-2k_{z,j}k_{z,j+1}\sigma^2},\qquad
+ t_\sigma=t_0e^{(k_{z,j}-k_{z,j+1})^2\sigma^2/2}.
+\end{equation}
+$r,t$ are tangential electric amplitudes. This corrects matching, not propagation.
+\texttt{Layer.sigma} applies at its top; \texttt{Structure.substrate\_sigma}
+at the substrate top. Both default to $0$ nm.
+
+\textbf{Sidewalls: independent Fourier damping}
+\begin{equation}
+ \Delta\varepsilon_m\mapsto\Delta\varepsilon_m
+ e^{-G_m^2\sigma_{\rm box}^2/2},\qquad G_m=2\pi m/D.
+\end{equation}
+Apply the same factor to each box's reciprocal-permittivity contrast.
+The zero harmonic is unchanged; \texttt{Box.sigma} defaults to $0$ nm.
+
+\smallskip
+\emph{Scope:} roughness is effective, with nominal material regions and no diffuse
+field. With interface roughness, $1-R-T$ is not pure material absorption and
+need not be nonnegative.
+
+\newpage
+\topic{4. Semi-analytic modal integration}{Total electric intensity}
+
+For one layer of thickness $d$, combine forward and backward modes into index $a$.
+Using a common local reference $z=0$ at the layer top, at $y=0$:
+\begin{equation}
+ \E(x,z)=\sum_a c_a\mathbf u_a(x)e^{\ii\kappa_a z},\qquad
+ \kappa_a=\pm k_{z,n}.
+\end{equation}
+$\mathbf u_a(x)$ is the reconstructed physical electric mode profile.
+For isotropic excitation, both s and p use
+\begin{equation}
+ |\E|^2=|E_x|^2+|E_y|^2+|E_z|^2.
+\end{equation}
+For fluorescent-atom weight $n_f(x)$ constant through the layer depth:
+\begin{equation}
+ \boxed{Y_j\propto\int_0^d\!\dd z\int_{\rm period}\!\dd x\,
+ n_f(x)|\E(x,z)|^2
+ =\sum_{a,b}c_ac_b^*L_{ab}U_{ab}}.
+\end{equation}
+
+\textbf{Lateral overlap}
+\begin{equation}
+ L_{ab}=\int_{\rm period}n_f(x)\,
+ \mathbf u_a(x)\cdot\mathbf u_b^*(x)\,\dd x.
+\end{equation}
+The dot product sums $x,y,z$ electric components. Box intervals permit analytic
+integration of each pair of lateral Fourier harmonics.
+
+\textbf{Depth integral}
+\begin{equation}
+ \boxed{U_{ab}=\int_0^d e^{\ii(\kappa_a-\kappa_b^*)z}\,\dd z
+ =\frac{e^{\ii(\kappa_a-\kappa_b^*)d}-1}{\ii(\kappa_a-\kappa_b^*)}}.
+\end{equation}
+When the denominator vanishes, $U_{ab}=d$. All mode-pair and
+forward/backward interference terms remain. Sum $Y_j$ over finite layers.
+
+\textbf{Stable form used in the code}
+
+Each amplitude is instead anchored at $z_a$: layer top for forward modes,
+layer bottom for backward modes. The corresponding depth matrix is
+\begin{equation}
+ \widetilde U_{ab}=\int_{z_{\rm top}}^{z_{\rm bottom}}
+ e^{\ii\kappa_a(z-z_a)-\ii\kappa_b^*(z-z_b)}e^{-\mu z}\,\dd z.
+\end{equation}
+Use the anchored amplitudes with $\widetilde U$. The optional $\mu$ is a constant
+escape-attenuation coefficient; $\mu=0$ gives the unweighted integral.
+The code evaluates exponentials from a bounded endpoint and uses finite
+zero-exponent limits.
+
+For fixed photon energy and one emission line, angle-independent atomic
+prefactors cancel in a normalized curve. Keep spatial weights and any
+angle-dependent attenuation or geometry factors. Incident $|\E_{\rm inc}|=1$.
+
+\medskip
+{\small\textbf{References and relation to the code}\par
+\href{https://arxiv.org/html/1908.11452v1}{Nikolaev et al., arXiv:1908.11452v1}:
+scalar notation, interface formalism, and semi-analytic fluorescence.
+The coupled vector eigenproblem and modal roughness extension above describe
+this package; they are not claimed as derivations from that scalar preprint.\par
+\href{https://doi.org/10.1107/S1600576716015776}{Haase et al. (2016), Eq.~3}:
+complex N\'evot--Croce reflection/transmission convention.\par
+Implementation: \texttt{src/xsw/solver.py}, \texttt{observables.py},
+\texttt{model.py}. Further detail: \texttt{docs/formulation.md}.}
+\end{document}
