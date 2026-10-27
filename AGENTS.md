@@ -309,6 +309,7 @@ experimental GIXRF reconstruction at E = 680 eV from Anna Andrle's MS thesis
 7. **Executable drivers (`examples/`)**:
    - `examples/fit_andrle_b.py`: 42-line minimalist optimization and visualization script.
    - `examples/plot_andrle_b.py`: 25-line instant viewer loading saved `.npz` results in < 0.05 seconds.
+   - `examples/compare_gixrf_gexrf.py`: Minimalist GIXRF vs GEXRF comparison using optical reciprocity.
 8. **Automated tests (`tests/test_fit.py`)**:
    Verify data loading, geometry construction, convolution conservation, analytical scaling,
    forward 3-channel evaluation, and save/load roundtrips (145 tests passing).

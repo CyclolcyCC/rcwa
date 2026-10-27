@@ -14,6 +14,7 @@ examples/output/*
 !examples/output/fit_andrle_b_results.txt
 !examples/output/fit_andrle_b_single_graph.png
 !examples/output/fit_andrle_b_summary.png
+!examples/output/gixrf_vs_gexrf_comparison.png
 .vscode/
 .idea/
 desktop.ini

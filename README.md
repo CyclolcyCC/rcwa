@@ -209,6 +209,9 @@ python examples/fit_andrle_b.py
 
 # Instant viewer loading saved pre-calculated results (< 0.05 seconds):
 python examples/plot_andrle_b.py
+
+# Compare GIXRF vs GEXRF via the optical reciprocity theorem:
+python examples/compare_gixrf_gexrf.py
 ```
 
 ## Examples and validation
