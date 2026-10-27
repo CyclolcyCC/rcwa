@@ -9,6 +9,7 @@ from collections import defaultdict
 from functools import lru_cache
 from importlib.resources import files
 import re
+from typing import overload
 
 import numpy as np
 from scipy.constants import Avogadro, physical_constants
@@ -130,6 +131,10 @@ def _positive_array(value, name):
     return values
 
 
+@overload
+def scattering_factors(element: str, energy: float | int) -> tuple[float, float]: ...
+@overload
+def scattering_factors(element: str, energy: np.ndarray) -> tuple[np.ndarray, np.ndarray]: ...
 def scattering_factors(element, energy):
     """Return (f1, f2) for one element at energy in eV (scalar or array).
 
@@ -154,6 +159,42 @@ def scattering_factors(element, energy):
     return f1, f2
 
 
+@overload
+def chi_from_formula(
+    formula: str,
+    density: float,
+    *,
+    energy: float | int,
+    wavelength: None = None,
+    molar_mass: float | None = None,
+) -> complex: ...
+@overload
+def chi_from_formula(
+    formula: str,
+    density: float,
+    *,
+    energy: None = None,
+    wavelength: float | int,
+    molar_mass: float | None = None,
+) -> complex: ...
+@overload
+def chi_from_formula(
+    formula: str,
+    density: float,
+    *,
+    energy: np.ndarray,
+    wavelength: None = None,
+    molar_mass: float | None = None,
+) -> np.ndarray: ...
+@overload
+def chi_from_formula(
+    formula: str,
+    density: float,
+    *,
+    energy: None = None,
+    wavelength: np.ndarray,
+    molar_mass: float | None = None,
+) -> np.ndarray: ...
 def chi_from_formula(formula, density, *, energy=None, wavelength=None, molar_mass=None):
     """Complex dielectric susceptibility chi=epsilon_r-1 for a compound.
 

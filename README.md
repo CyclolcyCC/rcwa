@@ -191,6 +191,26 @@ They solve each illumination separately; eigenproblems are not stacked in memory
 Floating-point agreement between serial and parallel runs is tolerance-based.
 Use a common `scale=` with `normalize` to preserve relative s/p magnitudes.
 
+## GIXRF fitting and nanoscale reconstruction (`xsw.fit`)
+
+The package includes an optimization module for reconstructing nanoscale grating profiles from experimental Grazing Incidence X-ray Fluorescence (GIXRF) angular scans. It implements the experimental reconstruction of Anna Andrle Configuration B at $E = 680\text{ eV}$ (p-polarization) from Anna Andrle's MS thesis and *Nanomaterials* 2021, 11, 1647:
+
+- **Physical modeling**: Trapezoidal $\mathrm{Si}_3\mathrm{N}_4$ line core with conformal $\mathrm{SiO}_2$ oxide cap and groove floor, plus a conformal $\mathrm{C}_2\mathrm{O}$ surface contamination coating ($t_C = 2.5\text{ nm}$).
+- **Roughness & divergence**: Lateral Debye-Waller sidewall roughness ($\sigma_{\mathrm{sw}}$), vertical Névot-Croce interface roughness ($\sigma_{\mathrm{vert}}$), and beamline angular divergence convolution ($\sigma_{\mathrm{div}} = 0.01^\circ$).
+- **Simultaneous 3-channel fitting**: Optimizes $\mathrm{N}\text{-}\mathrm{K}\alpha$, $\mathrm{O}\text{-}\mathrm{K}\alpha$, and $\mathrm{C}\text{-}\mathrm{K}\alpha$ simultaneously against 178 experimental angular points.
+- **Closed-form scale elimination**: Evaluates optimal elemental scaling factors $c_{\mathrm{N}}^*, c_{\mathrm{O}}^*, c_{\mathrm{C}}^*$ analytically at each step via weighted linear least squares, keeping the search space strictly geometric.
+- **Serialization & persistence**: Native `result.save()` and `FitResult.load()` for lossless `.npz` storage and instant reloading.
+
+### Running the reconstruction and viewer:
+
+```bash
+# Run full 3-channel GIXRF optimization and plot (~30 seconds):
+python examples/fit_andrle_b.py
+
+# Instant viewer loading saved pre-calculated results (< 0.05 seconds):
+python examples/plot_andrle_b.py
+```
+
 ## Examples and validation
 
 ```bash

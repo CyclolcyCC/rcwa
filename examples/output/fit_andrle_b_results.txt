@@ -1,0 +1,16 @@
+=== Reconstruction Summary (Anna Andrle Configuration B, 680 eV) ===
+Optimizer Status: `ftol` termination condition is satisfied. (success=True, evaluations=7)
+Final Chi^2: 551.31 (Reduced Chi^2 / DoF: 5.51)
+Optimal Scale Factors: c_N = 3.1635e-04, c_O = 2.5455e-03, c_C = 2.1533e-04
+-----------------------------------------------------------------
+Parameter            | Value           | 1-sigma Uncertainty
+-----------------------------------------------------------------
+h (nm)               | 93.614          | +/- 1.317      
+w (nm)               | 47.447          | +/- 0.483      
+swa (deg)            | 82.923          | +/- 0.465      
+tt (nm)              | 1.938           | +/- 0.117      
+tg (nm)              | 2.000           | +/- 0.190      
+sigma_sw (nm)        | 2.795           | +/- 0.410      
+sigma_vert (nm)      | 1.677           | +/- 0.602      
+tc (nm)              | 2.500           | (Fixed)        
+-----------------------------------------------------------------

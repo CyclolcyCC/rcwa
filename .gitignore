@@ -5,7 +5,15 @@ __pycache__/
 .venv/
 build/
 dist/
-examples/output/
+examples/output/*
+!examples/output/0_andrle_anna_meta.svg
+!examples/output/andrle_fig4_37_experimental_data.npz
+!examples/output/andrle_fig4_37_experimental_data.csv
+!examples/output/andrle_b_meta_178pts.npy
+!examples/output/fit_andrle_b_results.npz
+!examples/output/fit_andrle_b_results.txt
+!examples/output/fit_andrle_b_single_graph.png
+!examples/output/fit_andrle_b_summary.png
 .vscode/
 .idea/
 desktop.ini

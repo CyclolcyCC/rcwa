@@ -19,8 +19,12 @@ where = ["src"]
 include = ["xsw*"]
 
 [tool.setuptools.package-data]
-xsw = ["data/sf/*.nff", "data/sf/readme.txt", "data/*.md"]
+xsw = ["data/sf/*.nff", "data/sf/readme.txt", "data/*.md", "py.typed"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
 

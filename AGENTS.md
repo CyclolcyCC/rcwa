@@ -41,6 +41,13 @@ installation (`python -m pip install .` and `python -m pip install -e .`).
   especially Section II.5, is the reference for the legacy semi-analytic
   fluorescence integration. The paper derives a scalar field formulation;
   the vector extension must use the actual electric-field components.
+- `legacy/theory/andrle_anna.pdf` and `legacy/theory/nanomaterials-11-01647.pdf`
+  define the experimental GIXRF reconstruction for Configuration B (Si3N4 grating
+  on Si substrate with SiO2 oxide, 680 eV excitation, simultaneous N-Kalpha and
+  O-Kalpha fluorescence).
+- `legacy/self_attenuation/20200417_BestFit.npy` contains the experimental angles,
+  measured N and O fluorescence intensities, JCMsuite reference curves, and
+  measurement uncertainties for Configuration B at 680 eV.
 
 Treat `legacy/` as an archived reference. Develop the new package outside it and
 preserve the archive unless the user requests changes there. New runtime code
@@ -215,6 +222,96 @@ integration method. State the normalization per unit length along invariant y.
   oversubscription. Compare serial, batched, and parallel results using justified
   tolerances rather than assuming bitwise identity.
 - Preserve a clear serial calculation path as a reference for optimized paths.
+
+## Fitting and experimental reconstruction: Anna Andrle Configuration B (680 eV)
+
+Reconstruct the nanoscale profile of a periodic Si3N4 grating on a Si substrate
+with native SiO2 oxide and surface carbon contamination (C2O), replicating the
+experimental GIXRF reconstruction at E = 680 eV from Anna Andrle's MS thesis
+(Section 4.5.1 / Figure 4.36 & Figure 4.37, and Nanomaterials 2021, 11, 1647).
+
+### Model parameterization and nominal values
+- Fixed illumination: E = 680 eV (lambda ~= 1.8233 nm), p-polarization, nominal
+  pitch p = 100.834 nm, azimuth phi = 0 rad.
+- Discretized trapezoidal geometry:
+  - Line height `h`: nominal 93.0 nm (bounds [80, 110] nm)
+  - Mid-width `w` (CD at half height): nominal 44.9 nm (bounds [35, 55] nm)
+  - Sidewall angle `swa`: nominal 82.5 deg (bounds [78, 88] deg)
+  - Top oxide cap thickness `t_t`: nominal 2.47 nm (bounds [1.0, 4.5] nm)
+  - Groove oxide thickness `t_g`: nominal 3.67 nm (bounds [2.0, 8.0] nm)
+  - Carbon contamination coating `t_C`: nominal 2.5 nm (C2O, bounds [0.5, 5.0] nm, default fixed)
+  - Substrate native oxide thickness `t_sub`: 0.0 nm (excluded per agreement)
+- Horizontal multislice discretization:
+  - Slices the trapezoid into N horizontal `Layer` objects (default N = 10 slices).
+  - Top cap layers: C2O contamination cap (thickness `t_C`), followed by SiO2 oxide cap (thickness `t_t`).
+  - Upper open trench slices (height `h - t_g - t_C`):
+    - Central Si3N4 box of local width w(z_j) with lateral Debye-Waller roughness `sigma_sw`
+    - Conformal SiO2 oxide inner sidewalls (thickness `t_t`)
+    - Conformal C2O outer contamination sidewalls (thickness `t_C`)
+    - Ambient trench: vacuum
+  - Groove floor contamination layer: C2O layer of thickness `t_C` coating the groove oxide
+  - Lower groove slices (height `t_g`): Si3N4 core flanked by SiO2 groove oxide extending to unit cell boundaries
+  - Clean Si substrate with interface roughness `sigma_vert` (native oxide excluded)
+- Material assignments and optical constants at 680 eV (lambda = 1.8233 nm):
+  - Substrate: Si (chi = -1.984e-3 + 3.046e-4j)
+  - Grating core: Si3N4 (fluorescent for N-Kalpha, 392.4 eV; chi = -2.518e-3 + 5.166e-4j; mu_N = 2.75e-3 nm^-1)
+  - Surface and groove oxides: SiO2 (fluorescent for O-Kalpha, 524.9 eV; chi = -1.746e-3 + 5.163e-4j; mu_O = 2.33e-3 nm^-1)
+  - Surface contamination: C2O (rho = 1.8 g/cm^3, fluorescent for C-Kalpha, 277.0 eV; chi = -1.590e-3 + 4.537e-4j; mu_C = 6.47e-4 nm^-1)
+
+### Physical effects in scope
+- **Sidewall roughness (Debye-Waller)**: Lateral box roughness `sigma_sw` (in nm,
+  nominal ~1.0-2.0 nm, bounds [0.0, 3.5] nm) damps Fourier contrast harmonics
+  by exp(-0.5 * (G * sigma_sw)^2) via `Box.sigma` on grating line boxes.
+- **Vertical interface roughness (Névot-Croce)**: Horizontal interface roughness
+  `sigma_vert` (in nm, nominal ~0.5-1.5 nm, bounds [0.0, 2.5] nm) damps modal
+  transition matrices V = P_upper^-1 P_lower by exp(-0.5 * (Delta k_z * sigma_vert)^2)
+  via `Layer.sigma` at true material boundaries (top of line cap, top of groove floor,
+  and `Structure.substrate_sigma`). Artificial slice-to-slice boundaries inside
+  the trapezoid keep `sigma = 0.0`.
+- **Incident beam divergence (<= 0.01 deg)**: The calculated angular fluorescence
+  yield curves I_k(alpha) are convolved with a 1D Gaussian kernel representing beam
+  angular spread sigma_div <= 0.01 deg:
+  `I_conv,k(alpha) = (I_k * G_sigma_div)(alpha)`,
+  where G_sigma_div(Delta alpha) = (1 / (sqrt(2*pi)*sigma_div)) * exp(-Delta alpha^2 / (2*sigma_div^2)).
+
+### Objective function and optimization
+- Experimental data is loaded from `examples/output/andrle_fig4_37_experimental_data.npz`
+  (178 curated angles alpha in [0.80 deg, 14.75 deg]):
+  - `exp_N`, `sigma_N`: experimental N-Kalpha counts and uncertainties
+  - `exp_O`, `sigma_O`: experimental O-Kalpha counts and uncertainties
+  - `exp_C`, `sigma_C`: experimental C-Kalpha counts and uncertainties
+- Simultaneous weighted chi-square minimization across all measured angles and channels:
+  `chi^2 = sum_{k in {N, O, C}} sum_i [(I_exp,k(alpha_i) - c_k * I_conv,k(alpha_i)) / sigma_k,i]^2`.
+- Optimal elemental scaling factors `c_N, c_O, c_C`:
+  Solved analytically via weighted linear least squares for any candidate geometry:
+  `c_k = [sum_i (I_exp,k(alpha_i) * I_conv,k(alpha_i) / sigma_k,i^2)] / [sum_i (I_conv,k(alpha_i)^2 / sigma_k,i^2)]`,
+  eliminating all scale factors from the non-linear search space.
+- Residual vector for `scipy.optimize.least_squares`:
+  `r_k(alpha_i) = (I_exp,k(alpha_i) - c_k * I_conv,k(alpha_i)) / sigma_k,i`.
+- SciPy optimization engine: `scipy.optimize.least_squares` with TRF method and bounds.
+
+### Implementation and architecture (`src/xsw/fit/`)
+1. **Data loader (`src/xsw/fit/data.py`)**:
+   Load `.npy` and `.npz` datasets, validate shapes, and expose `ExperimentData` container supporting N, O, and optional C.
+2. **Discretized trapezoid builder (`src/xsw/fit/geometry.py`)**:
+   Clean geometry generator `build_andrle_b_sample(params, num_slices=10)` returning
+   a configured `xsw.Structure` with C2O contamination, SiO2 caps/grooves, Si3N4 core, and Si substrate.
+3. **Divergence convolution (`src/xsw/fit/divergence.py`)**:
+   Efficient Gaussian convolution kernel matching the angular grid.
+4. **Residual and objective evaluation (`src/xsw/fit/objective.py`)**:
+   Evaluate N, O, and C fluorescence yields, apply divergence convolution, compute optimal
+   c_k, and return weighted residuals and chi^2 in `ForwardResult`.
+5. **Optimization and persistence (`src/xsw/fit/optimizer.py`)**:
+   `fit_andrle_structure` minimizes weighted chi^2 and computes parameter covariance.
+   `FitResult.save()` and `FitResult.load()` provide lossless serialization to `.npz` and `.txt`.
+6. **Visualization (`src/xsw/fit/visualization.py`)**:
+   `plot_reconstruction_single_graph` (matching Fig. 4.37 with small markers) and `plot_reconstruction_summary`.
+7. **Executable drivers (`examples/`)**:
+   - `examples/fit_andrle_b.py`: 42-line minimalist optimization and visualization script.
+   - `examples/plot_andrle_b.py`: 25-line instant viewer loading saved `.npz` results in < 0.05 seconds.
+8. **Automated tests (`tests/test_fit.py`)**:
+   Verify data loading, geometry construction, convolution conservation, analytical scaling,
+   forward 3-channel evaluation, and save/load roundtrips (145 tests passing).
 
 ## Validation and working approach
 
