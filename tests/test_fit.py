@@ -202,3 +202,16 @@ def test_fit_result_save_and_load(tmp_path):
     assert loaded.success == fit_res.success
     assert loaded.message == fit_res.message
 
+
+def test_plot_andrle_heatmap(tmp_path):
+    from xsw.fit import plot_andrle_heatmap
+    theta = np.linspace(0.5, 5.0, 10)
+    phi = np.linspace(0.0, 3.0, 8)
+    int_N = np.random.uniform(1e-6, 5e-5, (len(theta), len(phi)))
+    int_O = np.random.uniform(1e-6, 5e-5, (len(theta), len(phi)))
+
+    out_file = tmp_path / "heatmap_test.png"
+    fig = plot_andrle_heatmap(theta, phi, int_N, int_O, output_path=out_file, close=True)
+    assert out_file.exists()
+    assert out_file.stat().st_size > 1000
+

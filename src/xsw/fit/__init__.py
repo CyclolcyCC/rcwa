@@ -10,6 +10,7 @@ from .objective import (
 )
 from .optimizer import FitResult, fit_andrle_structure
 from .visualization import (
+    plot_andrle_heatmap,
     plot_reconstruction_single_graph,
     plot_reconstruction_summary,
     plot_structure,
@@ -31,4 +32,5 @@ __all__ = [
     "plot_structure",
     "plot_reconstruction_summary",
     "plot_reconstruction_single_graph",
+    "plot_andrle_heatmap",
 ]

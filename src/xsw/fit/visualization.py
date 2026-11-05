@@ -2,9 +2,11 @@
 from pathlib import Path
 from typing import Any, Optional
 from matplotlib.axes import Axes
+from matplotlib.colors import Normalize
 from matplotlib.figure import Figure
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 import numpy as np
 
 import xsw
@@ -305,6 +307,139 @@ def plot_reconstruction_single_graph(
         path = Path(output_path)
         path.parent.mkdir(parents=True, exist_ok=True)
         fig.savefig(path, dpi=180)
+        if close:
+            plt.close(fig)
+
+    return fig
+
+
+def plot_andrle_heatmap(
+    theta_deg: np.ndarray,
+    phi_deg: np.ndarray,
+    int_N: np.ndarray,
+    int_O: np.ndarray,
+    *,
+    vmax: float = 8.5e-5,
+    title: Optional[str] = None,
+    output_path: Optional[str | Path] = None,
+    close: bool = False,
+) -> Figure:
+    """Plot 2D angular fluorescence heatmaps replicating Figure 4.10 from Anna Andrle's thesis.
+
+    Displays Nitrogen N-Kalpha on the left (-phi in [-3, 0] deg) using Greens_r and
+    Oxygen O-Kalpha on the right (+phi in [0, 3] deg) using Blues_r with shared vertical
+    angle of incidence theta in [0, 6] deg and side-by-side colorbars.
+
+    Parameters
+    ----------
+    theta_deg : np.ndarray
+        Grazing incidence angle grid in degrees (vertical axis theta).
+    phi_deg : np.ndarray
+        Azimuthal angle grid in degrees (horizontal axis from 0 to max_phi).
+    int_N : np.ndarray
+        2D array of Nitrogen fluorescence intensity (shape: len(theta) x len(phi)).
+    int_O : np.ndarray
+        2D array of Oxygen fluorescence intensity (shape: len(theta) x len(phi)).
+    vmax : float, default 8.5e-5
+        Upper limit for colorbar scale in photons / incident photon.
+    title : str, optional
+        Optional figure suptitle.
+    output_path : str or Path, optional
+        Path to save output figure.
+    close : bool, default False
+        Whether to close figure after saving.
+
+    Returns
+    -------
+    matplotlib.figure.Figure
+    """
+    fig = plt.figure(figsize=(9, 4.8), dpi=200)
+    # Grid: [ax_N, ax_O, cb_N, cb_O]
+    gs = fig.add_gridspec(
+        1, 4,
+        width_ratios=[1.0, 1.0, 0.045, 0.045],
+        wspace=0.035,
+        left=0.08, right=0.88, top=0.92, bottom=0.15
+    )
+
+    ax_n = fig.add_subplot(gs[0, 0])
+    ax_o = fig.add_subplot(gs[0, 1], sharey=ax_n)
+    ax_cb_n = fig.add_subplot(gs[0, 2])
+    ax_cb_o = fig.add_subplot(gs[0, 3])
+
+    norm = Normalize(vmin=0.0, vmax=vmax)
+
+    # 1. Nitrogen (left panel): -phi from -3.0 to 0.0
+    # Horizontally flipped so -3.0 deg corresponds to phi=3.0 deg and 0.0 deg to phi=0.0 deg
+    im_n = ax_n.imshow(
+        np.fliplr(int_N),
+        origin="lower",
+        extent=[-phi_deg[-1], 0.0, theta_deg[0], theta_deg[-1]],
+        aspect="auto",
+        cmap="Greens_r",
+        norm=norm,
+        interpolation="bicubic",
+    )
+
+    # 2. Oxygen (right panel): +phi from 0.0 to +3.0
+    im_o = ax_o.imshow(
+        int_O,
+        origin="lower",
+        extent=[0.0, phi_deg[-1], theta_deg[0], theta_deg[-1]],
+        aspect="auto",
+        cmap="Blues_r",
+        norm=norm,
+        interpolation="bicubic",
+    )
+
+    # Axes limits & ticks
+    ax_n.set_xlim(-phi_deg[-1], 0.0)
+    ax_n.set_ylim(theta_deg[0], 6.0)
+    ax_o.set_xlim(0.0, phi_deg[-1])
+    ax_o.set_ylim(theta_deg[0], 6.0)
+
+    ax_n.set_xticks([-3.0, -2.5, -2.0, -1.5, -1.0, -0.5])
+    ax_n.set_yticks([1, 2, 3, 4, 5, 6])
+    ax_o.set_xticks([0.5, 1.0, 1.5, 2.0, 2.5, 3.0])
+    plt.setp(ax_o.get_yticklabels(), visible=False)
+
+    ax_n.tick_params(direction="out", length=4)
+    ax_o.tick_params(direction="out", length=4)
+
+    # Labels matching Figure 4.10 of Anna Andrle
+    ax_n.set_xlabel(r"$- \varphi \;/\; ^\circ$", fontsize=13)
+    ax_o.set_xlabel(r"$\varphi \;/\; ^\circ$", fontsize=13)
+    ax_n.set_ylabel(r"$\theta \;/\; ^\circ$", fontsize=13)
+
+    # Badges matching thesis styling
+    badge_n = dict(boxstyle="round,pad=0.35,rounding_size=0.4", fc="#d9f0d3", ec="#1b7837", lw=2.2)
+    ax_n.text(0.08, 0.92, "N-Kα", transform=ax_n.transAxes,
+              fontsize=12, va="top", ha="left", bbox=badge_n, fontweight="bold")
+
+    badge_o = dict(boxstyle="round,pad=0.35,rounding_size=0.4", fc="#deebf7", ec="#2171b5", lw=2.2)
+    ax_o.text(0.08, 0.92, "O-Kα", transform=ax_o.transAxes,
+              fontsize=12, va="top", ha="left", bbox=badge_o, fontweight="bold")
+
+    # Side-by-side vertical colorbars
+    cb_n = fig.colorbar(im_n, cax=ax_cb_n)
+    cb_o = fig.colorbar(im_o, cax=ax_cb_o)
+
+    ax_cb_n.set_yticks([])
+    ax_cb_n.tick_params(length=0)
+
+    cb_ticks = np.linspace(0.0, 8.0e-5, 9)
+    cb_o.set_ticks(cb_ticks)
+    ax_cb_o.yaxis.set_major_formatter(ticker.FormatStrFormatter("%.0e"))
+    ax_cb_o.tick_params(left=True, right=True, direction="out", length=3.5)
+    ax_cb_o.set_ylabel("Fluorescence intensity / incident photon", fontsize=11.5, labelpad=10)
+
+    if title:
+        fig.suptitle(title, fontsize=12, fontweight="bold", y=0.98)
+
+    if output_path is not None:
+        path = Path(output_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        fig.savefig(path, dpi=200)
         if close:
             plt.close(fig)
 

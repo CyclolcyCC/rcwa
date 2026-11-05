@@ -305,14 +305,16 @@ experimental GIXRF reconstruction at E = 680 eV from Anna Andrle's MS thesis
    `fit_andrle_structure` minimizes weighted chi^2 and computes parameter covariance.
    `FitResult.save()` and `FitResult.load()` provide lossless serialization to `.npz` and `.txt`.
 6. **Visualization (`src/xsw/fit/visualization.py`)**:
-   `plot_reconstruction_single_graph` (matching Fig. 4.37 with small markers) and `plot_reconstruction_summary`.
+   `plot_reconstruction_single_graph` (matching Fig. 4.37 with small markers), `plot_reconstruction_summary`,
+   and `plot_andrle_heatmap` (replicating Fig. 4.10 with Greens_r and Blues_r, badges, and dual adjacent colorbars).
 7. **Executable drivers (`examples/`)**:
    - `examples/fit_andrle_b.py`: 42-line minimalist optimization and visualization script.
    - `examples/plot_andrle_b.py`: 25-line instant viewer loading saved `.npz` results in < 0.05 seconds.
    - `examples/compare_gixrf_gexrf.py`: Minimalist GIXRF vs GEXRF comparison using optical reciprocity.
+   - `examples/plot_andrle_heatmap.py`: 2D angular fluorescence heatmaps replicating Figure 4.10 from Anna Andrle's thesis.
 8. **Automated tests (`tests/test_fit.py`)**:
    Verify data loading, geometry construction, convolution conservation, analytical scaling,
-   forward 3-channel evaluation, and save/load roundtrips (145 tests passing).
+   forward 3-channel evaluation, save/load roundtrips, and 2D heatmap visualization (146 tests passing).
 
 ## Validation and working approach
 

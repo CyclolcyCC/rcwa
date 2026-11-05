@@ -28,6 +28,7 @@ The sample geometry is structured along depth $z$, periodic along $x$, and conti
   - [3. Experimental GIXRF Nanoscale Fitting](#3-experimental-gixrf-nanoscale-fitting)
   - [4. Instant Results Viewer (< 0.05 seconds)](#4-instant-results-viewer--005-seconds)
   - [5. Comparing GIXRF vs GEXRF](#5-comparing-gixrf-vs-gexrf)
+  - [6. 2D Angular Fluorescence Heatmaps](#6-2d-angular-fluorescence-heatmaps-figure-410-replication)
 - [Physical Conventions & Units](#physical-conventions--units)
 - [Repository & Package Architecture](#repository--package-architecture)
 - [Testing & Validation](#testing--validation)
@@ -277,6 +278,16 @@ python examples/compare_gixrf_gexrf.py
 
 *Generates side-by-side comparison on the shared physical count scale (`examples/output/gixrf_vs_gexrf_comparison.png`).*
 
+### 6. 2D Angular Fluorescence Heatmaps (Figure 4.10 Replication)
+
+Calculate and plot the 2D fluorescence heatmaps for Nitrogen ($\mathrm{N}\text{-}\mathrm{K}\alpha$, green) and Oxygen ($\mathrm{O}\text{-}\mathrm{K}\alpha$, blue) across incidence angles $\theta \in [0.1^\circ, 6.0^\circ]$ and azimuth $\varphi \in [0^\circ, 3^\circ]$:
+
+```bash
+python examples/plot_andrle_heatmap.py
+```
+
+*Replicates Figure 4.10 from Anna Andrle's thesis with exact `Greens_r` and `Blues_r` colormaps, badges, and dual adjacent vertical colorbars in photons / incident photon (`examples/output/andrle_fig4_10_heatmap.png`).*
+
 ---
 
 ## Physical Conventions & Units
@@ -318,8 +329,9 @@ rcwa/
 │   ├── a_Si3N4_structure.py    # Minimalist forward simulation
 │   ├── fit_andrle_b.py         # Full GIXRF 3-channel profile reconstruction
 │   ├── plot_andrle_b.py        # Instant results viewer (< 0.05 s)
-│   └── compare_gixrf_gexrf.py  # GIXRF vs GEXRF reciprocity comparison
-├── tests/                      # Automated test suite (145 tests)
+│   ├── compare_gixrf_gexrf.py  # GIXRF vs GEXRF reciprocity comparison
+│   └── plot_andrle_heatmap.py  # 2D fluorescence heatmaps (Andrle Fig. 4.10)
+├── tests/                      # Automated test suite (146 tests)
 ├── benchmarks/                 # Reproducible performance benchmarks
 └── docs/                       # Detailed theoretical derivation (formulation.md)
 ```
