@@ -91,7 +91,7 @@ def main():
 
         np.savez_compressed(data_file, betas_deg=betas_deg, Is=Is, Ip=Ip)
 
-    # %% 2. Plot Single Comparison Graph (Replicating User Reference Screenshot)
+    # %% 2. Plot Single Comparison Graph with Inset Zoom (15° - 17.5°)
     fig, ax = plt.subplots(figsize=(9.5, 7.0), dpi=180)
 
     # Styling directly matching the reference figure
@@ -111,6 +111,28 @@ def main():
     ax.grid(True, which="minor", linestyle=":", alpha=0.3)
     ax.tick_params(axis="both", which="major", labelsize=11.5)
     ax.legend(loc="lower right", fontsize=12, framealpha=0.9, facecolor="white")
+
+    # Inset zoom into [15.0, 17.5] deg range (replicating reference inset style)
+    ax_ins = ax.inset_axes([0.08, 0.55, 0.38, 0.38])
+    ax_ins.plot(betas_deg, Is, color="#1f77b4", lw=2.4)
+    ax_ins.plot(betas_deg, Ip, color="#ff7f0e", lw=2.0, ls="--")
+
+    zoom_min, zoom_max = 15.0, 17.5
+    mask = (betas_deg >= zoom_min) & (betas_deg <= zoom_max)
+    y_min = min(Is[mask].min(), Ip[mask].min())
+    y_max = max(Is[mask].max(), Ip[mask].max())
+    y_pad = (y_max - y_min) * 0.08
+
+    ax_ins.set_xlim(zoom_min, zoom_max)
+    ax_ins.set_ylim(y_min - y_pad, y_max + y_pad)
+    ax_ins.set_xticks([15.0, 15.5, 16.0, 16.5, 17.0, 17.5])
+    ax_ins.tick_params(axis="both", which="major", labelsize=9.5)
+    ax_ins.grid(True, which="major", linestyle=":", alpha=0.7)
+    ax_ins.xaxis.set_minor_locator(AutoMinorLocator(2))
+    ax_ins.yaxis.set_minor_locator(AutoMinorLocator(2))
+
+    # Connector lines and rectangle on main plot
+    ax.indicate_inset_zoom(ax_ins, edgecolor="black", alpha=0.6, lw=1.0)
 
     fig.tight_layout()
 
