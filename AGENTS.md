@@ -311,6 +311,7 @@ experimental GIXRF reconstruction at E = 680 eV from Anna Andrle's MS thesis
    - `examples/fit_andrle_b.py`: 42-line minimalist optimization and visualization script.
    - `examples/plot_andrle_b.py`: 25-line instant viewer loading saved `.npz` results in < 0.05 seconds.
    - `examples/compare_gixrf_gexrf.py`: Minimalist GIXRF vs GEXRF comparison using optical reciprocity.
+   - `examples/compare_gexrf_polarizations.py`: GEXRF s vs p polarization comparison replicating reference graph.
    - `examples/plot_andrle_heatmap.py`: 2D angular fluorescence heatmaps replicating Figure 4.10 from Anna Andrle's thesis.
 8. **Automated tests (`tests/test_fit.py`)**:
    Verify data loading, geometry construction, convolution conservation, analytical scaling,

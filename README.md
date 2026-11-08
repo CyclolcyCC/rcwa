@@ -29,6 +29,7 @@ The sample geometry is structured along depth $z$, periodic along $x$, and conti
   - [4. Instant Results Viewer (< 0.05 seconds)](#4-instant-results-viewer--005-seconds)
   - [5. Comparing GIXRF vs GEXRF](#5-comparing-gixrf-vs-gexrf)
   - [6. 2D Angular Fluorescence Heatmaps](#6-2d-angular-fluorescence-heatmaps-figure-410-replication)
+  - [7. GEXRF Polarization Comparison: s vs p](#7-gexrf-polarization-comparison-s-vs-p-i_s-vs-i_p)
 - [Physical Conventions & Units](#physical-conventions--units)
 - [Repository & Package Architecture](#repository--package-architecture)
 - [Testing & Validation](#testing--validation)
@@ -288,6 +289,16 @@ python examples/plot_andrle_heatmap.py
 
 *Replicates Figure 4.10 from Anna Andrle's thesis with exact `Greens_r` and `Blues_r` colormaps, badges, and dual adjacent vertical colorbars in photons / incident photon (`examples/output/andrle_fig4_10_heatmap.png`).*
 
+### 7. GEXRF Polarization Comparison: s vs p ($I_s$ vs $I_p$)
+
+Compare $s$- and $p$-polarized characteristic fluorescence in the Grazing Emission (GEXRF) geometry:
+
+```bash
+python examples/compare_gexrf_polarizations.py
+```
+
+*Plots $I_s(\beta)$ vs $I_p(\beta)$ over $\beta \in [0.05^\circ, 20.0^\circ]$ replicating the reference comparison graph layout and styling (`examples/output/gexrf_sp_comparison.png`).*
+
 ---
 
 ## Physical Conventions & Units
@@ -329,8 +340,9 @@ rcwa/
 │   ├── a_Si3N4_structure.py    # Minimalist forward simulation
 │   ├── fit_andrle_b.py         # Full GIXRF 3-channel profile reconstruction
 │   ├── plot_andrle_b.py        # Instant results viewer (< 0.05 s)
-│   ├── compare_gixrf_gexrf.py  # GIXRF vs GEXRF reciprocity comparison
-│   └── plot_andrle_heatmap.py  # 2D fluorescence heatmaps (Andrle Fig. 4.10)
+│   ├── compare_gixrf_gexrf.py           # GIXRF vs GEXRF reciprocity comparison
+│   ├── compare_gexrf_polarizations.py   # GEXRF s vs p polarization comparison
+│   └── plot_andrle_heatmap.py           # 2D fluorescence heatmaps (Andrle Fig. 4.10)
 ├── tests/                      # Automated test suite (146 tests)
 ├── benchmarks/                 # Reproducible performance benchmarks
 └── docs/                       # Detailed theoretical derivation (formulation.md)
