@@ -121,13 +121,6 @@ ax2.set_ylim(-0.02, 1.24)
 ax2.legend(loc="upper right", fontsize=8.5, framealpha=0.92)
 ax2.grid(True, linestyle=":", alpha=0.5)
 
-fig.suptitle(
-    f"Конфигурация B (Andrle) — сравнение GI- и GE-геометрий ($p$-поляризация)\n"
-    f"Восстановленная решётка ($h={p.h:.1f}$ нм, $w={p.w:.1f}$ нм, $t_C={p.tc:.1f}$ нм)",
-    fontsize=12.5,
-    fontweight="bold",
-)
-
 svg_dir = output_dir / "svg_output"
 svg_dir.mkdir(parents=True, exist_ok=True)
 out_png = output_dir / "gixrf_vs_gexrf_comparison.png"
