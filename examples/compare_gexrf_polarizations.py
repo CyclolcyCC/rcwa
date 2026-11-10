@@ -171,8 +171,10 @@ def main():
     fig.tight_layout()
 
     out_file = output_dir / "gexrf_sp_comparison.png"
+    out_svg = output_dir / "gexrf_sp_comparison.svg"
     fig.savefig(out_file, dpi=180)
-    print(f"Saved GEXRF s vs p comparison plot to: {out_file}")
+    fig.savefig(out_svg)
+    print(f"Saved GEXRF s vs p comparison plot to: {out_file} and {out_svg}")
 
     # %% 3. Two-Panel Plot with Relative Polarization Difference
     fig_diff, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5.5), dpi=180)
