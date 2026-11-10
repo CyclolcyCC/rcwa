@@ -128,8 +128,10 @@ fig.suptitle(
     fontweight="bold",
 )
 
+svg_dir = output_dir / "svg_output"
+svg_dir.mkdir(parents=True, exist_ok=True)
 out_png = output_dir / "gixrf_vs_gexrf_comparison.png"
-out_svg = output_dir / "gixrf_vs_gexrf_comparison.svg"
+out_svg = svg_dir / "gixrf_vs_gexrf_comparison.svg"
 fig.savefig(out_png, dpi=450)
 fig.savefig(out_svg)
 print(f"\nSaved comparison plot to: {out_png} and {out_svg}")

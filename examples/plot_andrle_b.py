@@ -31,15 +31,18 @@ result = fit.FitResult.load(fit_file)
 print(result.summary())
 
 # %% 3. Plot Single Graph (Fig. 4.37), 4-Panel Summary, and Standalone Reconstructed Profile (RU + SVG)
+svg_dir = output_dir / "svg_output"
+svg_dir.mkdir(parents=True, exist_ok=True)
+
 fig_single = fit.plot_reconstruction_single_graph(
     data, result, output_path=output_dir / "fit_andrle_b_single_graph.png", lang="ru",
 )
-fig_single.savefig(output_dir / "fit_andrle_b_single_graph.svg")
+fig_single.savefig(svg_dir / "fit_andrle_b_single_graph.svg")
 
 fig_summary = fit.plot_reconstruction_summary(
     data, result, num_slices=10, output_path=output_dir / "fit_andrle_b_summary.png", lang="ru",
 )
-fig_summary.savefig(output_dir / "fit_andrle_b_summary.svg")
+fig_summary.savefig(svg_dir / "fit_andrle_b_summary.svg")
 
 # Standalone Reconstructed Profile (matching Image 4 in Russian + vector SVG)
 struct, _, _, _ = fit.build_andrle_b_sample(result.params, num_slices=10)
@@ -54,7 +57,7 @@ fit.plot_structure(
     lang="ru",
 )
 fig_prof.savefig(output_dir / "reconstructed_profile.png", dpi=450)
-fig_prof.savefig(output_dir / "reconstructed_profile.svg")
-print(f"Saved Russian SVG outputs in: {output_dir}")
+fig_prof.savefig(svg_dir / "reconstructed_profile.svg")
+print(f"Saved Russian SVG outputs in: {svg_dir}")
 
 plt.show()

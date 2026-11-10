@@ -94,8 +94,10 @@ def main():
         np.savez_compressed(data_file, theta_deg=theta_deg, phi_deg=phi_deg, int_N=int_N, int_O=int_O)
 
     # %% 2. Plot Figure 4.10 Heatmaps (Russian labels, >=450 DPI + SVG)
+    svg_dir = output_dir / "svg_output"
+    svg_dir.mkdir(parents=True, exist_ok=True)
     out_png = output_dir / "andrle_fig4_10_heatmap.png"
-    out_svg = output_dir / "andrle_fig4_10_heatmap.svg"
+    out_svg = svg_dir / "andrle_fig4_10_heatmap.svg"
     fig = fit.plot_andrle_heatmap(
         theta_deg, phi_deg, int_N, int_O,
         output_path=out_png,

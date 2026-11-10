@@ -205,10 +205,11 @@ def build_andrle_mesh_figure() -> plt.Figure:
 
 def main():
     output_dir = REPO_ROOT / "examples" / "output"
-    output_dir.mkdir(parents=True, exist_ok=True)
+    svg_dir = output_dir / "svg_output"
+    svg_dir.mkdir(parents=True, exist_ok=True)
     fig = build_andrle_mesh_figure()
 
-    out_svg = output_dir / "andrle_structure_mesh.svg"
+    out_svg = svg_dir / "andrle_structure_mesh.svg"
     out_png = output_dir / "andrle_structure_mesh.png"
     fig.savefig(out_svg)
     fig.savefig(out_png, dpi=450)

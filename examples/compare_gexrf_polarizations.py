@@ -204,8 +204,11 @@ def main():
 
     fig.tight_layout()
 
+    svg_dir = output_dir / "svg_output"
+    svg_dir.mkdir(parents=True, exist_ok=True)
+
     out_file = output_dir / "gexrf_sp_comparison.png"
-    out_svg = output_dir / "gexrf_sp_comparison.svg"
+    out_svg = svg_dir / "gexrf_sp_comparison.svg"
     fig.savefig(out_file, dpi=450)
     fig.savefig(out_svg)
     print(f"Saved GEXRF s vs p comparison plot to: {out_file} and {out_svg}")
@@ -234,7 +237,7 @@ def main():
 
     fig_diff.tight_layout()
     out_diff = output_dir / "gexrf_sp_comparison_with_diff.png"
-    out_diff_svg = output_dir / "gexrf_sp_comparison_with_diff.svg"
+    out_diff_svg = svg_dir / "gexrf_sp_comparison_with_diff.svg"
     fig_diff.savefig(out_diff, dpi=450)
     fig_diff.savefig(out_diff_svg)
     print(f"Saved two-panel comparison with difference to: {out_diff} and {out_diff_svg}")
