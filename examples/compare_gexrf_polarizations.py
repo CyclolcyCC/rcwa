@@ -126,12 +126,16 @@ def main():
             zoom_betas_deg=zoom_betas_deg, zoom_Is=zoom_Is, zoom_Ip=zoom_Ip,
         )
 
-    # %% 2. Plot Single Comparison Graph with Short Inset Zoom (16.00° - 16.10°)
-    fig, ax = plt.subplots(figsize=(9.5, 7.0), dpi=180)
+    # %% 2. Plot Single Comparison Graph with Deep Inset Zoom (16.00° - 16.10°) and Delta % Arrow
+    # Color scheme aligned with GIXRF/GEXRF comparison (blue, green, black)
+    color_s = "#08519c"
+    color_p = "#31a354"
+    color_arrow = "#252525"
 
-    # Styling directly matching the reference figure
-    ax.plot(betas_deg, Is, color="#1f77b4", lw=2.4, label=r"$s$-поляризация ($I_s$)")
-    ax.plot(betas_deg, Ip, color="#ff7f0e", lw=2.0, ls="--", label=r"$p$-поляризация ($I_p$)")
+    fig, ax = plt.subplots(figsize=(9.5, 7.0), dpi=450)
+
+    ax.plot(betas_deg, Is, color=color_s, lw=2.5, label=r"$s$-поляризация ($I_s$)")
+    ax.plot(betas_deg, Ip, color=color_p, lw=2.1, ls="--", label=r"$p$-поляризация ($I_p$)")
 
     ax.set_title(r"Сравнение $I_s(\beta)$ и $I_p(\beta)$", fontsize=14, fontweight="bold", pad=12)
     ax.set_xlabel(r"Угол выхода $\beta$, град", fontsize=13)
@@ -145,16 +149,16 @@ def main():
     ax.grid(True, which="major", linestyle="-", alpha=0.6)
     ax.grid(True, which="minor", linestyle=":", alpha=0.3)
     ax.tick_params(axis="both", which="major", labelsize=11.5)
-    ax.legend(loc="lower right", fontsize=12, framealpha=0.9, facecolor="white")
+    ax.legend(loc="lower right", fontsize=12, framealpha=0.92, facecolor="white")
 
-    # Short inset zoom into [16.00, 16.10] deg where |Is - Ip| peaks (~2.30 rel. units)
-    ax_ins = ax.inset_axes([0.09, 0.59, 0.36, 0.35])
-    ax_ins.plot(zoom_betas_deg, zoom_Is, color="#1f77b4", lw=2.6)
-    ax_ins.plot(zoom_betas_deg, zoom_Ip, color="#ff7f0e", lw=2.2, ls="--")
+    # Inset zoom into [16.00, 16.10] deg where |Is - Ip| peaks (~2.30 rel. units)
+    ax_ins = ax.inset_axes([0.08, 0.57, 0.38, 0.37])
+    ax_ins.plot(zoom_betas_deg, zoom_Is, color=color_s, lw=2.6)
+    ax_ins.plot(zoom_betas_deg, zoom_Ip, color=color_p, lw=2.2, ls="--")
 
     y_min = min(zoom_Is.min(), zoom_Ip.min())
     y_max = max(zoom_Is.max(), zoom_Ip.max())
-    y_pad = (y_max - y_min) * 0.12
+    y_pad = (y_max - y_min) * 0.08
 
     ax_ins.set_xlim(zoom_min, zoom_max)
     ax_ins.set_ylim(y_min - y_pad, y_max + y_pad)
@@ -165,6 +169,36 @@ def main():
     ax_ins.xaxis.set_minor_locator(AutoMinorLocator(2))
     ax_ins.yaxis.set_minor_locator(AutoMinorLocator(2))
 
+    # Double-headed arrow inside inset highlighting Delta in %
+    mid = len(zoom_betas_deg) // 2
+    xm = float(zoom_betas_deg[mid])
+    ys_m = float(zoom_Is[mid])
+    yp_m = float(zoom_Ip[mid])
+    delta_pct = (ys_m - yp_m) / ys_m * 100.0
+
+    ax_ins.plot([xm - 0.004, xm + 0.004], [ys_m, ys_m], color=color_arrow, lw=0.9, ls=":")
+    ax_ins.plot([xm - 0.004, xm + 0.004], [yp_m, yp_m], color=color_arrow, lw=0.9, ls=":")
+    ax_ins.annotate(
+        "",
+        xy=(xm, ys_m),
+        xytext=(xm, yp_m),
+        arrowprops=dict(arrowstyle="<->", color=color_arrow, lw=1.7, shrinkA=0, shrinkB=0),
+        zorder=8,
+    )
+    ax_ins.annotate(
+        rf"$\Delta = {delta_pct:.2f}\%$",
+        xy=(xm, 0.5 * (ys_m + yp_m)),
+        xytext=(xm + 0.012, yp_m - 1.55),
+        fontsize=10.5,
+        fontweight="bold",
+        color=color_arrow,
+        ha="left",
+        va="center",
+        bbox=dict(boxstyle="round,pad=0.25", fc="white", ec=color_arrow, lw=1.0, alpha=0.96),
+        arrowprops=dict(arrowstyle="-|>", color=color_arrow, lw=1.0, connectionstyle="arc3,rad=-0.15"),
+        zorder=9,
+    )
+
     # Connector lines and rectangle on main plot
     ax.indicate_inset_zoom(ax_ins, edgecolor="black", alpha=0.65, lw=1.0)
 
@@ -172,36 +206,38 @@ def main():
 
     out_file = output_dir / "gexrf_sp_comparison.png"
     out_svg = output_dir / "gexrf_sp_comparison.svg"
-    fig.savefig(out_file, dpi=180)
+    fig.savefig(out_file, dpi=450)
     fig.savefig(out_svg)
     print(f"Saved GEXRF s vs p comparison plot to: {out_file} and {out_svg}")
 
     # %% 3. Two-Panel Plot with Relative Polarization Difference
-    fig_diff, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5.5), dpi=180)
+    fig_diff, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5.5), dpi=450)
 
-    ax1.plot(betas_deg, Is, color="#1f77b4", lw=2.4, label=r"$s$-поляризация ($I_s$)")
-    ax1.plot(betas_deg, Ip, color="#ff7f0e", lw=2.0, ls="--", label=r"$p$-поляризация ($I_p$)")
-    ax1.set_title(r"Сравнение $I_s(\beta)$ и $I_p(\beta)$ (GEXRF)", fontsize=13, fontweight="bold")
+    ax1.plot(betas_deg, Is, color=color_s, lw=2.5, label=r"$s$-поляризация ($I_s$)")
+    ax1.plot(betas_deg, Ip, color=color_p, lw=2.1, ls="--", label=r"$p$-поляризация ($I_p$)")
+    ax1.set_title(r"Сравнение $I_s(\beta)$ и $I_p(\beta)$ (скользящий выход)", fontsize=13, fontweight="bold")
     ax1.set_xlabel(r"Угол выхода $\beta$, град", fontsize=12)
     ax1.set_ylabel(r"Интенсивность $I_{\mathrm{fluor}}$, отн. ед.", fontsize=12)
     ax1.set_xlim(0, 20)
     ax1.set_ylim(0, max(Is.max(), Ip.max()) * 1.06)
     ax1.grid(True, linestyle="-", alpha=0.6)
-    ax1.legend(loc="lower right", fontsize=11, framealpha=0.9)
+    ax1.legend(loc="lower right", fontsize=11, framealpha=0.92)
 
     diff_rel = (Is - Ip) / np.maximum(Is, 1e-12) * 100.0
-    ax2.plot(betas_deg, diff_rel, color="#d62728", lw=2.0, label=r"Разность $(I_s - I_p)/I_s$")
+    ax2.plot(betas_deg, diff_rel, color=color_arrow, lw=2.0, label=r"Разность $(I_s - I_p)/I_s$")
     ax2.set_title(r"Относительная разность поляризаций", fontsize=13, fontweight="bold")
     ax2.set_xlabel(r"Угол выхода $\beta$, град", fontsize=12)
     ax2.set_ylabel(r"Разность $\delta$, %", fontsize=12)
     ax2.set_xlim(0, 20)
     ax2.grid(True, linestyle="-", alpha=0.6)
-    ax2.legend(loc="upper right", fontsize=11, framealpha=0.9)
+    ax2.legend(loc="upper right", fontsize=11, framealpha=0.92)
 
     fig_diff.tight_layout()
     out_diff = output_dir / "gexrf_sp_comparison_with_diff.png"
-    fig_diff.savefig(out_diff, dpi=180)
-    print(f"Saved two-panel comparison with difference to: {out_diff}")
+    out_diff_svg = output_dir / "gexrf_sp_comparison_with_diff.svg"
+    fig_diff.savefig(out_diff, dpi=450)
+    fig_diff.savefig(out_diff_svg)
+    print(f"Saved two-panel comparison with difference to: {out_diff} and {out_diff_svg}")
 
     plt.show()
 

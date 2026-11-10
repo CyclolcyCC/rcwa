@@ -211,7 +211,45 @@ def test_plot_andrle_heatmap(tmp_path):
     int_O = np.random.uniform(1e-6, 5e-5, (len(theta), len(phi)))
 
     out_file = tmp_path / "heatmap_test.png"
-    fig = plot_andrle_heatmap(theta, phi, int_N, int_O, output_path=out_file, close=True)
+    plot_andrle_heatmap(theta, phi, int_N, int_O, output_path=out_file, close=True)
     assert out_file.exists()
     assert out_file.stat().st_size > 1000
+
+    out_svg = tmp_path / "heatmap_test_ru.svg"
+    fig_ru = plot_andrle_heatmap(theta, phi, int_N, int_O, output_path=out_svg, close=True, lang="ru")
+    assert out_svg.exists()
+    assert "Интенсивность" in fig_ru.axes[-1].get_ylabel()
+
+
+def test_plot_russian_localization_and_svg(tmp_path):
+    from xsw.fit import plot_reconstruction_single_graph, plot_structure
+    angles = np.linspace(1.0, 10.0, 12)
+    data = ExperimentData(
+        angles_deg=angles,
+        exp_N=np.linspace(0.1, 0.8, 12),
+        exp_O=np.linspace(0.2, 0.9, 12),
+        sigma_N=np.full(12, 0.02),
+        sigma_O=np.full(12, 0.02),
+    )
+    p0 = AndrleBParams(h=93.0, w=44.9, swa=82.5, tt=2.47, tg=3.67, tc=2.5,
+                       sigma_sw=1.5, sigma_vert=1.0)
+    from xsw.fit import FitResult
+    fwd = evaluate_forward(p0, data, num_slices=6, max_order=5)
+    fit_res = FitResult(
+        params=p0, param_errors=np.zeros(7), covariance=np.eye(7),
+        forward=fwd, chi2=fwd.total_chi2, reduced_chi2=fwd.reduced_chi2,
+        success=True, message="ok", nfev=1,
+    )
+
+    out_svg = tmp_path / "single_ru.svg"
+    fig = plot_reconstruction_single_graph(data, fit_res, output_path=out_svg, close=True, lang="ru")
+    assert out_svg.exists()
+    assert "град" in fig.axes[0].get_xlabel()
+
+    struct, _, _, _ = build_andrle_b_sample(p0, num_slices=6)
+    import matplotlib.pyplot as plt
+    fig_s, ax_s = plt.subplots()
+    plot_structure(struct, ax=ax_s, lang="ru")
+    assert "Высота" in ax_s.get_ylabel()
+    plt.close(fig_s)
 

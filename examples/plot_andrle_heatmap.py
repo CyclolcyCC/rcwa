@@ -93,14 +93,17 @@ def main():
         int_O = raw_O * scale_o
         np.savez_compressed(data_file, theta_deg=theta_deg, phi_deg=phi_deg, int_N=int_N, int_O=int_O)
 
-    # %% 2. Plot Figure 4.10 Heatmaps
+    # %% 2. Plot Figure 4.10 Heatmaps (Russian labels, >=450 DPI + SVG)
     out_png = output_dir / "andrle_fig4_10_heatmap.png"
+    out_svg = output_dir / "andrle_fig4_10_heatmap.svg"
     fig = fit.plot_andrle_heatmap(
         theta_deg, phi_deg, int_N, int_O,
         output_path=out_png,
         close=False,
+        lang="ru",
     )
-    print(f"Saved replicated heatmap figure to: {out_png}")
+    fig.savefig(out_svg, dpi=450)
+    print(f"Saved replicated heatmap figure to: {out_png} and {out_svg}")
     plt.show()
 
 
