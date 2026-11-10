@@ -8,7 +8,7 @@ import time
 from pathlib import Path
 from concurrent.futures import ProcessPoolExecutor
 import matplotlib.pyplot as plt
-from matplotlib.ticker import AutoMinorLocator
+from matplotlib.ticker import AutoMinorLocator, FormatStrFormatter
 import numpy as np
 
 # Ensure xsw is importable
@@ -52,46 +52,81 @@ def _calc_batch(betas_rad):
     return res
 
 
+def _solve_angles(betas_deg, params_dict, E_em, mat_key, max_order=12):
+    betas_rad = np.deg2rad(betas_deg)
+    chunk_size = max(1, (len(betas_rad) + 7) // 8)
+    chunks = [betas_rad[i:i + chunk_size] for i in range(0, len(betas_rad), chunk_size)]
+    with ProcessPoolExecutor(
+        max_workers=min(8, len(chunks)),
+        initializer=_init_worker,
+        initargs=(params_dict, E_em, mat_key, max_order),
+    ) as pool:
+        flat = [item for sub in pool.map(_calc_batch, chunks) for item in sub]
+    return np.array([r[0] for r in flat]), np.array([r[1] for r in flat])
+
+
+def _load_params_dict(fit_file):
+    result = fit.FitResult.load(fit_file)
+    p = result.params
+    return p, {
+        k: getattr(p, k)
+        for k in ["h", "w", "swa", "tt", "tg", "sigma_sw", "sigma_vert", "tc", "tsub", "pitch"]
+    }
+
+
 def main():
     output_dir = REPO_ROOT / "examples" / "output"
     data_file = output_dir / "gexrf_sp_data.npz"
+    fit_file = output_dir / "fit_andrle_b_results.npz"
 
     # %% 1. Load or Compute GEXRF s vs p Curves
     # Characteristic line: N-Kalpha (392.4 eV) from central Si3N4 grating core
     # (Matches the intensity scale [0, 2500] in the reference comparison graph)
     E_em = 392.4
     mat_key = "Si3N4"
+    zoom_min, zoom_max = 16.00, 16.10
 
     if data_file.exists() and "--recalc" not in sys.argv:
         print(f"Loading pre-calculated GEXRF s/p data from {data_file.name}...")
-        data = np.load(data_file)
-        betas_deg = data["betas_deg"]
-        Is = data["Is"]
-        Ip = data["Ip"]
+        with np.load(data_file) as data:
+            betas_deg, Is, Ip = data["betas_deg"], data["Is"], data["Ip"]
+            has_zoom = (
+                "zoom_betas_deg" in data
+                and np.isclose(data["zoom_betas_deg"][0], zoom_min)
+                and np.isclose(data["zoom_betas_deg"][-1], zoom_max)
+            )
+            if has_zoom:
+                zoom_betas_deg = data["zoom_betas_deg"]
+                zoom_Is = data["zoom_Is"]
+                zoom_Ip = data["zoom_Ip"]
+        if not has_zoom:
+            _, params_dict = _load_params_dict(fit_file)
+            zoom_betas_deg = np.linspace(zoom_min, zoom_max, 21)
+            print(f"Computing high-resolution inset scan [{zoom_min:.2f}°, {zoom_max:.2f}°]...")
+            zoom_Is, zoom_Ip = _solve_angles(zoom_betas_deg, params_dict, E_em, mat_key)
+            np.savez_compressed(
+                data_file, betas_deg=betas_deg, Is=Is, Ip=Ip,
+                zoom_betas_deg=zoom_betas_deg, zoom_Is=zoom_Is, zoom_Ip=zoom_Ip,
+            )
     else:
-        fit_file = output_dir / "fit_andrle_b_results.npz"
-        result = fit.FitResult.load(fit_file)
-        p = result.params
-        params_dict = {k: getattr(p, k) for k in ["h", "w", "swa", "tt", "tg", "sigma_sw", "sigma_vert", "tc", "tsub", "pitch"]}
-
+        p, params_dict = _load_params_dict(fit_file)
         betas_deg = np.linspace(0.05, 20.0, 200)
-        betas_rad = np.deg2rad(betas_deg)
+        zoom_betas_deg = np.linspace(zoom_min, zoom_max, 21)
 
         print(f"Reconstructed Grating: h={p.h:.1f}nm, w={p.w:.1f}nm, swa={p.swa:.1f}°, tc={p.tc:.1f}nm")
         print(f"Computing GEXRF s vs p curves across {len(betas_deg)} emission angles (N-Kalpha, 392.4 eV)...")
 
         t0 = time.perf_counter()
-        with ProcessPoolExecutor(max_workers=8, initializer=_init_worker, initargs=(params_dict, E_em, mat_key, 12)) as pool:
-            chunks = [betas_rad[i:i + 25] for i in range(0, len(betas_rad), 25)]
-            flat = [item for sub in pool.map(_calc_batch, chunks) for item in sub]
-
-        Is = np.array([r[0] for r in flat])
-        Ip = np.array([r[1] for r in flat])
+        Is, Ip = _solve_angles(betas_deg, params_dict, E_em, mat_key)
+        zoom_Is, zoom_Ip = _solve_angles(zoom_betas_deg, params_dict, E_em, mat_key)
         print(f"Calculation completed in {time.perf_counter() - t0:.2f} s.")
 
-        np.savez_compressed(data_file, betas_deg=betas_deg, Is=Is, Ip=Ip)
+        np.savez_compressed(
+            data_file, betas_deg=betas_deg, Is=Is, Ip=Ip,
+            zoom_betas_deg=zoom_betas_deg, zoom_Is=zoom_Is, zoom_Ip=zoom_Ip,
+        )
 
-    # %% 2. Plot Single Comparison Graph with Inset Zoom (15° - 17.5°)
+    # %% 2. Plot Single Comparison Graph with Short Inset Zoom (16.00° - 16.10°)
     fig, ax = plt.subplots(figsize=(9.5, 7.0), dpi=180)
 
     # Styling directly matching the reference figure
@@ -112,27 +147,26 @@ def main():
     ax.tick_params(axis="both", which="major", labelsize=11.5)
     ax.legend(loc="lower right", fontsize=12, framealpha=0.9, facecolor="white")
 
-    # Inset zoom into [15.0, 17.5] deg range (replicating reference inset style)
-    ax_ins = ax.inset_axes([0.08, 0.55, 0.38, 0.38])
-    ax_ins.plot(betas_deg, Is, color="#1f77b4", lw=2.4)
-    ax_ins.plot(betas_deg, Ip, color="#ff7f0e", lw=2.0, ls="--")
+    # Short inset zoom into [16.00, 16.10] deg where |Is - Ip| peaks (~2.30 rel. units)
+    ax_ins = ax.inset_axes([0.09, 0.59, 0.36, 0.35])
+    ax_ins.plot(zoom_betas_deg, zoom_Is, color="#1f77b4", lw=2.6)
+    ax_ins.plot(zoom_betas_deg, zoom_Ip, color="#ff7f0e", lw=2.2, ls="--")
 
-    zoom_min, zoom_max = 15.0, 17.5
-    mask = (betas_deg >= zoom_min) & (betas_deg <= zoom_max)
-    y_min = min(Is[mask].min(), Ip[mask].min())
-    y_max = max(Is[mask].max(), Ip[mask].max())
-    y_pad = (y_max - y_min) * 0.08
+    y_min = min(zoom_Is.min(), zoom_Ip.min())
+    y_max = max(zoom_Is.max(), zoom_Ip.max())
+    y_pad = (y_max - y_min) * 0.12
 
     ax_ins.set_xlim(zoom_min, zoom_max)
     ax_ins.set_ylim(y_min - y_pad, y_max + y_pad)
-    ax_ins.set_xticks([15.0, 15.5, 16.0, 16.5, 17.0, 17.5])
+    ax_ins.set_xticks([16.00, 16.02, 16.04, 16.06, 16.08, 16.10])
+    ax_ins.xaxis.set_major_formatter(FormatStrFormatter("%.2f"))
     ax_ins.tick_params(axis="both", which="major", labelsize=9.5)
     ax_ins.grid(True, which="major", linestyle=":", alpha=0.7)
     ax_ins.xaxis.set_minor_locator(AutoMinorLocator(2))
     ax_ins.yaxis.set_minor_locator(AutoMinorLocator(2))
 
     # Connector lines and rectangle on main plot
-    ax.indicate_inset_zoom(ax_ins, edgecolor="black", alpha=0.6, lw=1.0)
+    ax.indicate_inset_zoom(ax_ins, edgecolor="black", alpha=0.65, lw=1.0)
 
     fig.tight_layout()
 
